@@ -1,12 +1,11 @@
 {
-  "name": "Arunika \u2014 Saree Organizer",
+  "name": "Arunika Saree Collection Studio",
   "short_name": "Arunika",
   "start_url": "./",
-  "scope": "./",
   "display": "standalone",
-  "background_color": "#fff9fb",
-  "theme_color": "#f7dce6",
-  "description": "Private local saree supplier and inventory organizer.",
+  "background_color": "#fff7f9",
+  "theme_color": "#b85e83",
+  "description": "Personal saree catalogue and supplier offer organizer",
   "icons": [
     {
       "src": "./assets/icon.svg",

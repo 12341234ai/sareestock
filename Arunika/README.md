@@ -1,43 +1,47 @@
-# Arunika — Saree Organizer
+# ARUNIKA — Saree Collection Studio
 
-A static, Android-friendly saree supplier offer organizer for GitHub Pages.
+A website-first, pink-and-white saree organizer that runs in a browser and stores its collection locally in IndexedDB. The optional install/offline shell is an enhancement; the project is a website and does not require an APK or native Android app.
+
+## Run the website locally
+
+Serve the project folder over HTTP (rather than `file://`):
+
+```bash
+python -m http.server 8000
+```
+
+Open `http://localhost:8000`.
 
 ## Features
-- Pink and white Arunika branding and dedication.
-- Supplier groups and multiple saree photos per upload.
-- Optional item ID and required selling price for every photo.
-- Gallery with supplier, item/design ID and price search, filters and sorting.
-- Photo Search by item ID or reference photo.
-- Clickable search results show the supplier, item ID and selling price; listings can be deleted from the result.
-- Exact matching item IDs are displayed as 100% ID matches.
-- Photo similarity is a lightweight colour-histogram estimate, not AI and not proof of identity.
-- Manual JSON backup and restore; clear-all confirmation.
-- Beginner-friendly How to Use page and PWA service worker.
 
-## Privacy and storage
-Records are stored in IndexedDB in the current browser profile on the current device. There is no server, login, cloud sync, or automatic backup. Export and transfer backups manually. Browser storage may be cleared or evicted.
+- Dashboard, supplier groups, gallery, local photo search, guide, and settings
+- Separate Item ID, selling price, purchase price, and supplier group per uploaded photo
+- Image decoding validation, JPEG compression, Blob-to-data-URL conversion, and safe staged batch saves
+- Duplicate Item ID warning that shows saved listing details/photos and each pending photo's correct preview/details
+- Confirmed individual deletion from Gallery and Photo Search
+- Photo similarity uses normalized RGB histogram and difference hash; it is an estimate, not AI or proof of identity
+- 30-day expiry and cleanup when the website opens or returns to the foreground (not while closed)
+- JSON backup/restore validation and atomic IndexedDB restore
+- Optional PWA manifest and offline shell cache
 
-## Publish using GitHub Codespaces
-1. Upload `Arunika-GitHub-Pages.zip` into your Codespaces file explorer.
-2. In the terminal run:
-   ```bash
-   unzip -o "Arunika-GitHub-Pages.zip"
-   ```
-   If your uploaded file has `(1)` in its name, use that exact name in the command.
-3. Copy the contents of the extracted folder into the repository root:
-   ```bash
-   cp -r Arunika/* .
-   ```
-4. Commit and push:
-   ```bash
-   git add .
-   git commit -m "Update Arunika saree organizer"
-   git push
-   ```
-5. In GitHub open **Settings → Pages → Build and deployment**. Select **Deploy from a branch**, choose `main` and `/(root)`, then Save.
+## GitHub Pages deployment
 
-Expected site: https://12341234ai.github.io/sareestock/
+From the repository root after uploading `Arunika-Final-Working.zip` into Codespaces:
 
-## Important limitation
-The photo percentage is a rough colour-profile similarity score. Different sarees with similar colours may score highly, and the same saree photographed under different lighting may score lower. A 100% result means the entered item ID matches exactly; it is not an independent visual verification.
-\n\n### Add Sarees price fields\nFor each uploaded saree photo, enter a required Item ID, your Selling Price, and the Bought/Purchase Price you paid. Both prices are saved in local browser storage and included in JSON backups. Gallery cards and listing details show both prices.\n
+```bash
+unzip -o Arunika-Final-Working.zip -d /tmp/arunika-working
+cp -r /tmp/arunika-working/Arunika/. .
+git add .
+git commit -m "Fix Arunika photo upload conversion and duplicate review"
+git push
+```
+
+Then GitHub: **Settings → Pages → Deploy from a branch → `main` → `/ (root)` → Save**.
+
+## Data safety
+
+The website retains `ArunikaDB`, the `records` object store, and its `groups` and `offers` records. Deploying to the same origin keeps access to the existing browser database. Back up regularly. Browser/site-data clearing may erase saved data. Expiry cleanup only happens while the website is running or is reactivated.
+
+## Verification report
+
+JavaScript syntax checks and ZIP integrity are verified. I attempted a Playwright/Chromium live test, but this environment blocks both `http://127.0.0.1` and `file://` navigation with `ERR_BLOCKED_BY_ADMINISTRATOR`; therefore browser upload/persistence, photo search, deletion, backup/restore, mobile viewport, and offline behavior could not be honestly marked as end-to-end passed in this session.

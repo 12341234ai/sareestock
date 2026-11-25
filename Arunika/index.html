@@ -1,45 +1,42 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f7dce6">
-  <meta name="description" content="Arunika — a private, local saree offer and gallery organizer.">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
-  <title>Arunika — Saree Organizer</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#b85e83">
+<title>Arunika — Saree Collection Studio</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">A</div>
-      <div><div class="brand-name">Arunika</div><div class="brand-tag">Every saree has a story. Every detail has a place.</div></div>
-    </div>
-    <button class="mobile-menu" id="menuToggle" aria-label="Open navigation">☰</button>
-  </header>
-  <div class="shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="side-caption">WORKSPACE</div>
-      <nav id="nav">
-        <button class="nav-btn active" data-page="dashboard">⌂ <span>Dashboard</span></button>
-        <button class="nav-btn" data-page="groups">▦ <span>Groups</span></button>
-        <button class="nav-btn" data-page="add">＋ <span>Add Sarees</span></button>
-        <button class="nav-btn" data-page="gallery">▧ <span>Gallery</span></button>
-        <button class="nav-btn" data-page="search">⌕ <span>Photo Search</span></button>
-        <button class="nav-btn" data-page="help">? <span>How to Use</span></button>
-        <button class="nav-btn" data-page="settings">⚙ <span>Settings</span></button>
-      </nav>
-      <div class="dedication"><span>MADE WITH LOVE FOR</span><strong>Aruna, Nainika,<br>Darshi & Kishore</strong></div>
-    </aside>
-    <main class="main" id="main">
-      <div id="pageContent"></div>
-      <footer>Arunika · Your saree records stay on this device</footer>
-    </main>
-  </div>
-  <input type="file" id="restoreFile" accept="application/json,.json" hidden>
-  <div id="toast" class="toast" role="status"></div>
-  <dialog id="modal"><div class="modal-inner"><button class="modal-close" id="modalClose" aria-label="Close">×</button><div id="modalContent"></div></div></dialog>
-  <script src="./app.js"></script>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brand-mark">A</div><div><strong>ARUNIKA</strong><small>Saree collection studio</small></div></div>
+    <nav id="nav">
+      <button class="nav-item active" data-page="dashboard"><span>⌂</span> Dashboard</button>
+      <button class="nav-item" data-page="groups"><span>◈</span> Groups</button>
+      <button class="nav-item" data-page="add"><span>＋</span> Add Sarees</button>
+      <button class="nav-item" data-page="gallery"><span>▧</span> Gallery</button>
+      <button class="nav-item" data-page="search"><span>⌕</span> Photo Search</button>
+      <button class="nav-item" data-page="guide"><span>♡</span> How to Use</button>
+      <button class="nav-item" data-page="settings"><span>⚙</span> Settings</button>
+    </nav>
+    <div class="side-note">A little space for every beautiful saree.</div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><button class="mobile-menu" id="menuBtn" aria-label="Open menu">☰</button><div class="breadcrumb">ARUNIKA <span>/</span> <b id="pageName">Dashboard</b></div><div class="top-pill">♡ Collection keeper</div></header>
+    <div id="app" class="content"></div>
+    <footer class="footer">Made with love for Aruna, Nainika, Darshi & Kishore. <span>Made by Max Verstappen (Charish)</span></footer>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div id="toast" role="status"></div>
+<script src="./database.js"></script>
+<script src="./search.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
