@@ -1,8 +1,10 @@
+
 import { clearStore, getAll, newId, put, putMany, remove, removeMany } from "@/lib/localStore";
 import { expiryFromUpload } from "@/lib/sareeUtils";
 
 const SAREES = "sarees";
 const GROUPS = "groups";
+const ITEM_ID_COUNTER_KEY = "arunika_next_item_number";
 
 export const SORT_OPTIONS = [
   { value: "newest", label: "Newest first" },
@@ -17,6 +19,7 @@ const time = (value) => new Date(value || 0).getTime();
 
 function sortSarees(list, sort) {
   const copy = [...list];
+
   switch (sort) {
     case "oldest":
       copy.sort((a, b) => time(a.upload_date) - time(b.upload_date));
@@ -36,24 +39,42 @@ function sortSarees(list, sort) {
     default:
       copy.sort((a, b) => time(b.upload_date) - time(a.upload_date));
   }
+
   return copy;
 }
 
 export async function fetchGroups() {
   const groups = await getAll(GROUPS);
-  return groups.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  return groups.sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""))
+  );
 }
 
 export async function countGroups() {
   return (await getAll(GROUPS)).length;
 }
 
-export async function fetchSarees({ search = "", groupId = "all", sort = "newest", limit = 500 } = {}) {
+export async function fetchSarees({
+  search = "",
+  groupId = "all",
+  sort = "newest",
+  limit = 500,
+} = {}) {
   const term = String(search || "").trim().toLowerCase();
   let list = await getAll(SAREES);
-  if (term) list = list.filter((saree) => (saree.item_id_search || "").includes(term));
-  if (groupId === "unassigned") list = list.filter((saree) => !saree.group_id);
-  else if (groupId && groupId !== "all") list = list.filter((saree) => saree.group_id === groupId);
+
+  if (term) {
+    list = list.filter((saree) =>
+      (saree.item_id_search || "").includes(term)
+    );
+  }
+
+  if (groupId === "unassigned") {
+    list = list.filter((saree) => !saree.group_id);
+  } else if (groupId && groupId !== "all") {
+    list = list.filter((saree) => saree.group_id === groupId);
+  }
+
   return sortSarees(list, sort).slice(0, limit);
 }
 
@@ -61,18 +82,84 @@ export async function countSarees() {
   return (await getAll(SAREES)).length;
 }
 
+/**
+ * Reserves the next available AR numbers.
+ * The counter is persisted so deleted or cancelled IDs are not reused.
+ */
+export async function reserveNextItemNumbers(count = 1) {
+  const amount = Math.max(0, Math.floor(Number(count) || 0));
+
+  if (amount === 0) return [];
+
+  const sarees = await getAll(SAREES);
+  let highestNumber = 100;
+
+  // Find the highest existing AR number.
+  for (const saree of sarees) {
+    const match = String(saree.item_id || "")
+      .trim()
+      .match(/^AR(\d+)$/i);
+
+    if (match) {
+      highestNumber = Math.max(highestNumber, Number(match[1]));
+    }
+  }
+
+  // Include previously reserved numbers.
+  try {
+    const savedNext = Number(
+      window.localStorage.getItem(ITEM_ID_COUNTER_KEY)
+    );
+
+    if (Number.isSafeInteger(savedNext) && savedNext > 100) {
+      highestNumber = Math.max(highestNumber, savedNext - 1);
+    }
+  } catch {
+    // Continue using existing records if local storage is unavailable.
+  }
+
+  const firstNumber = highestNumber + 1;
+  const nextNumber = firstNumber + amount;
+
+  // Save the next unused number before returning the suggestions.
+  try {
+    window.localStorage.setItem(
+      ITEM_ID_COUNTER_KEY,
+      String(nextNumber)
+    );
+  } catch {
+    // Existing records can still be used to calculate suggestions.
+  }
+
+  return Array.from(
+    { length: amount },
+    (_, index) =>
+      `AR${String(firstNumber + index).padStart(3, "0")}`
+  );
+}
+
 export async function findDuplicates(itemId) {
   const term = String(itemId || "").trim().toLowerCase();
+
   if (!term) return [];
+
   const list = await getAll(SAREES);
-  return list.filter((saree) => saree.item_id_search === term);
+
+  return list.filter(
+    (saree) => saree.item_id_search === term
+  );
 }
 
 export async function findByIds(itemId) {
   const term = String(itemId || "").trim().toLowerCase();
+
   if (!term) return [];
+
   const list = await getAll(SAREES);
-  return list.filter((saree) => (saree.item_id_search || "").includes(term));
+
+  return list.filter(
+    (saree) => (saree.item_id_search || "").includes(term)
+  );
 }
 
 export async function fetchAllSarees(limit = 1000) {
@@ -83,10 +170,12 @@ export async function fetchAllSarees(limit = 1000) {
 export async function fetchGroupCounts() {
   const list = await getAll(SAREES);
   const map = {};
+
   list.forEach((saree) => {
     const key = saree.group_id || "";
     map[key] = (map[key] || 0) + 1;
   });
+
   return map;
 }
 
@@ -94,7 +183,11 @@ export async function fetchDashboard() {
   const now = Date.now();
   const weekAgo = now - 7 * 86400000;
   const weekAhead = now + 7 * 86400000;
-  const [sarees, groups] = await Promise.all([getAll(SAREES), getAll(GROUPS)]);
+
+  const [sarees, groups] = await Promise.all([
+    getAll(SAREES),
+    getAll(GROUPS),
+  ]);
 
   return {
     total: sarees.length,
@@ -103,13 +196,16 @@ export async function fetchDashboard() {
       const expiry = time(saree.expiry_date);
       return expiry >= now && expiry <= weekAhead;
     }).length,
-    recent: sarees.filter((saree) => time(saree.upload_date) >= weekAgo).length,
+    recent: sarees.filter(
+      (saree) => time(saree.upload_date) >= weekAgo
+    ).length,
     latest: sortSarees(sarees, "newest").slice(0, 4),
   };
 }
 
 export async function createSaree(input) {
   const uploadDate = input.upload_date || new Date().toISOString();
+
   const record = {
     id: newId(),
     created_date: new Date().toISOString(),
@@ -125,6 +221,7 @@ export async function createSaree(input) {
     expiry_date: input.expiry_date || expiryFromUpload(uploadDate),
     signature: input.signature || null,
   };
+
   await put(SAREES, record);
   return record;
 }
@@ -135,12 +232,14 @@ export async function deleteSaree(id) {
 
 export async function createGroup(name) {
   const clean = String(name || "").trim();
+
   const record = {
     id: newId(),
     created_date: new Date().toISOString(),
     name: clean,
     name_search: clean.toLowerCase(),
   };
+
   await put(GROUPS, record);
   return record;
 }
@@ -148,17 +247,25 @@ export async function createGroup(name) {
 /** Creates the group, or renames it and updates every saree that belongs to it. */
 export async function saveGroup({ id, name }) {
   const clean = String(name || "").trim();
+
   if (!id) return createGroup(clean);
 
   const groups = await getAll(GROUPS);
   const existing = groups.find((group) => group.id === id);
+
   if (!existing) return createGroup(clean);
 
-  const updated = { ...existing, name: clean, name_search: clean.toLowerCase() };
+  const updated = {
+    ...existing,
+    name: clean,
+    name_search: clean.toLowerCase(),
+  };
+
   await put(GROUPS, updated);
 
   const sarees = await getAll(SAREES);
   const affected = sarees.filter((saree) => saree.group_id === id);
+
   if (affected.length) {
     await putMany(
       SAREES,
@@ -166,19 +273,29 @@ export async function saveGroup({ id, name }) {
         ...saree,
         group_name: clean,
         group_name_search: clean.toLowerCase(),
-      })),
+      }))
     );
   }
+
   return updated;
 }
 
 export async function unassignGroup(groupId) {
   const sarees = await getAll(SAREES);
-  const affected = sarees.filter((saree) => saree.group_id === groupId);
+
+  const affected = sarees.filter(
+    (saree) => saree.group_id === groupId
+  );
+
   if (affected.length) {
     await putMany(
       SAREES,
-      affected.map((saree) => ({ ...saree, group_id: "", group_name: "", group_name_search: "" })),
+      affected.map((saree) => ({
+        ...saree,
+        group_id: "",
+        group_name: "",
+        group_name_search: "",
+      }))
     );
   }
 }
@@ -192,12 +309,25 @@ let lastCleanup = 0;
 /** Removes listings older than 30 days. Runs when the app is opened or refreshed. */
 export async function cleanupExpired(force = false) {
   const now = Date.now();
+
   if (!force && now - lastCleanup < 60000) return 0;
+
   lastCleanup = now;
+
   try {
     const sarees = await getAll(SAREES);
-    const expired = sarees.filter((saree) => time(saree.expiry_date) < now);
-    if (expired.length) await removeMany(SAREES, expired.map((saree) => saree.id));
+
+    const expired = sarees.filter(
+      (saree) => time(saree.expiry_date) < now
+    );
+
+    if (expired.length) {
+      await removeMany(
+        SAREES,
+        expired.map((saree) => saree.id)
+      );
+    }
+
     return expired.length;
   } catch {
     return 0;
