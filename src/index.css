@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 351 100% 98%;
+    --foreground: 340 10% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 340 10% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 10% 16%;
+    --primary: 341 50% 57%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 345 58% 95%;
+    --secondary-foreground: 335 37% 17%;
+    --muted: 345 45% 96%;
+    --muted-foreground: 340 8% 42%;
+    --accent: 345 58% 95%;
+    --accent-foreground: 335 37% 17%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 350 53% 87.5%;
+    --input: 350 53% 87.5%;
+    --ring: 341 50% 57%;
+    --radius: 1rem;
+    --plum: 333 37% 17%;
+    --warning: 32 95% 44%;
+    --font-heading: "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --chart-1: 341 50% 57%;
+    --chart-2: 345 45% 78%;
+    --chart-3: 333 37% 30%;
+    --chart-4: 32 95% 44%;
+    --chart-5: 0 72% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-[hsl(var(--plum))];
+    font-weight: 600;
+  }
+
+  ::selection {
+    background: #f9dbe4;
+    color: #3b1b29;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply rounded-2xl border border-border bg-card;
+    box-shadow: 0 4px 24px rgba(59, 27, 41, 0.04);
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground;
+  }
+
+  .brand-wordmark {
+    @apply font-display text-[hsl(var(--plum))];
+    letter-spacing: 0.22em;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
