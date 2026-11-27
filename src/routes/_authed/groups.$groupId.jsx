@@ -5,7 +5,7 @@ import EmptyState from "@/components/common/EmptyState";
 import SareeCard from "@/components/saree/SareeCard";
 import SareeViewer from "@/components/saree/SareeViewer";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { cleanupExpired, fetchGroups, fetchSarees } from "@/lib/data";
+import { fetchGroups, fetchSarees } from "@/lib/data";
 
 export const Route = createFileRoute("/_authed/groups/$groupId")({
   head: () => ({ meta: [{ title: "Group — Arunika" }] }),
@@ -15,20 +15,30 @@ export const Route = createFileRoute("/_authed/groups/$groupId")({
 function GroupDetailPage() {
   const { groupId } = Route.useParams();
   const unassigned = groupId === "unassigned";
+
   const [detail, setDetail] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const { data, loading, reload } = useAsyncData(async () => {
-    await cleanupExpired();
     const [sarees, groups] = await Promise.all([
-      fetchSarees({ groupId: unassigned ? "unassigned" : groupId, sort: "newest", limit: 200 }),
+      fetchSarees({
+        groupId: unassigned ? "unassigned" : groupId,
+        sort: "newest",
+        limit: 200,
+      }),
       fetchGroups(),
     ]);
-    return { sarees, group: groups.find((group) => group.id === groupId) || null };
+
+    return {
+      sarees,
+      group: groups.find((group) => group.id === groupId) || null,
+    };
   }, [groupId]);
 
   const sarees = data?.sarees || [];
-  const title = unassigned ? "Unassigned sarees" : data?.group?.name || "Supplier group";
+  const title = unassigned
+    ? "Unassigned sarees"
+    : data?.group?.name || "Supplier group";
 
   return (
     <div>
@@ -44,11 +54,16 @@ function GroupDetailPage() {
         <h1 className="font-heading text-[clamp(1.5rem,3vw,2.25rem)] leading-tight text-[hsl(var(--plum))]">
           {title}
         </h1>
+
         <p className="mt-1 text-[13px] text-muted-foreground">
           {loading
             ? "Loading sarees…"
-            : `${sarees.length} ${sarees.length === 1 ? "listing" : "listings"}${
-                unassigned ? " without a supplier group" : " in this group"
+            : `${sarees.length} ${
+                sarees.length === 1 ? "listing" : "listings"
+              }${
+                unassigned
+                  ? " without a supplier group"
+                  : " in this group"
               }`}
         </p>
       </div>
@@ -56,7 +71,11 @@ function GroupDetailPage() {
       {sarees.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {sarees.map((saree) => (
-            <SareeCard key={saree.id} saree={saree} onOpen={setDetail} />
+            <SareeCard
+              key={saree.id}
+              saree={saree}
+              onOpen={setDetail}
+            />
           ))}
         </div>
       ) : (

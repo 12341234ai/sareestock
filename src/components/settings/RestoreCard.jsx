@@ -24,24 +24,34 @@ export default function RestoreCard({ onRestored }) {
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
+
     if (!file) return;
+
     setErrors([]);
     setPending(null);
     setDone("");
+
     try {
       const text = await file.text();
+
       let parsed;
+
       try {
         parsed = JSON.parse(text);
       } catch {
-        setErrors(["This file is not valid JSON, so it cannot be an Arunika backup."]);
+        setErrors([
+          "This file is not valid JSON, so it cannot be an Arunika backup.",
+        ]);
         return;
       }
+
       const validated = validateBackup(parsed);
+
       if (!validated.ok) {
         setErrors(validated.errors);
         return;
       }
+
       setPending(validated);
     } catch {
       setErrors(["This file could not be read."]);
@@ -50,18 +60,28 @@ export default function RestoreCard({ onRestored }) {
 
   const confirmRestore = async () => {
     if (!pending) return;
+
     setBusy(true);
     setProgress("Restoring…");
+
     try {
-      const result = await restoreBackup(pending, (current, total) =>
-        setProgress(`Restoring saree ${current} of ${total}…`),
+      const result = await restoreBackup(
+        pending,
+        (current, total) =>
+          setProgress(`Restoring saree ${current} of ${total}…`),
       );
-      setDone(`${result.sarees} listings and ${result.groups} new groups restored.`);
+
+      setDone(
+        `${result.sarees} listings and ${result.groups} new groups restored.`,
+      );
+
       toast.success(`${result.sarees} sarees restored.`);
       setPending(null);
       onRestored?.();
     } catch {
-      toast.error("The restore failed. Your existing data was left unchanged.");
+      toast.error(
+        "The restore failed. Your existing data was left unchanged.",
+      );
     } finally {
       setBusy(false);
       setProgress("");
@@ -74,11 +94,15 @@ export default function RestoreCard({ onRestored }) {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
           <FileCheck2 className="h-[18px] w-[18px]" />
         </span>
+
         <div>
-          <h2 className="font-heading text-[18px] text-[hsl(var(--plum))]">Restore backup</h2>
+          <h2 className="font-heading text-[18px] text-[hsl(var(--plum))]">
+            Restore backup
+          </h2>
+
           <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
-            Choose an Arunika backup file. It is checked first, then added to your catalogue — your
-            current sarees are never replaced.
+            Choose an Arunika backup file. It is checked first, then added
+            to your catalogue. Your current sarees are never replaced.
           </p>
         </div>
       </div>
@@ -96,6 +120,7 @@ export default function RestoreCard({ onRestored }) {
           <p className="text-[12px] font-medium text-[#B0453C]">
             This backup could not be restored:
           </p>
+
           <ul className="mt-1 list-disc space-y-1 pl-4 text-[12px] leading-5 text-[#B0453C]">
             {errors.map((error) => (
               <li key={error}>{error}</li>
@@ -104,7 +129,12 @@ export default function RestoreCard({ onRestored }) {
         </div>
       ) : null}
 
-      {done ? <p className="text-[12px] leading-5 text-[#2F7A55]">{done}</p> : null}
+      {done ? (
+        <p className="text-[12px] leading-5 text-[#2F7A55]">
+          {done}
+        </p>
+      ) : null}
+
       {busy && progress ? (
         <p className="flex items-center gap-2 text-[12px] text-[hsl(var(--plum))]">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -133,8 +163,10 @@ export default function RestoreCard({ onRestored }) {
             <DialogTitle className="font-heading text-[20px] text-[hsl(var(--plum))]">
               Restore this backup?
             </DialogTitle>
+
             <DialogDescription className="text-[13px] leading-5">
-              The file passed every check. These listings will be added to your catalogue.
+              The file passed every check. These listings will be added
+              to your catalogue.
             </DialogDescription>
           </DialogHeader>
 
@@ -142,25 +174,29 @@ export default function RestoreCard({ onRestored }) {
             <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3 text-[13px]">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Listings</span>
-                <span className="font-medium text-[hsl(var(--plum))]">{pending.counts.sarees}</span>
+                <span className="font-medium text-[hsl(var(--plum))]">
+                  {pending.counts.sarees}
+                </span>
               </div>
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Groups</span>
-                <span className="font-medium text-[hsl(var(--plum))]">{pending.counts.groups}</span>
+                <span className="font-medium text-[hsl(var(--plum))]">
+                  {pending.counts.groups}
+                </span>
               </div>
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Exported</span>
                 <span className="font-medium text-[hsl(var(--plum))]">
                   {formatDate(pending.exportedAt)}
                 </span>
               </div>
-              {pending.alreadyExpired ? (
-                <p className="pt-1 text-[12px] leading-5 text-[#8A5A12]">
-                  {pending.alreadyExpired} listing
-                  {pending.alreadyExpired === 1 ? " was" : "s were"} past their 30 days. They get a
-                  fresh 30-day window so nothing disappears right after restoring.
-                </p>
-              ) : null}
+
+              <p className="pt-1 text-[12px] leading-5 text-muted-foreground">
+                Restored sarees will remain saved until you manually delete
+                them.
+              </p>
             </div>
           ) : null}
 
@@ -173,6 +209,7 @@ export default function RestoreCard({ onRestored }) {
             >
               Cancel
             </Button>
+
             <Button
               className="h-11 rounded-full bg-primary px-5 text-primary-foreground"
               onClick={confirmRestore}

@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  CalendarClock,
   Camera,
   Database,
   Download,
@@ -34,7 +33,7 @@ const STEPS = [
   {
     icon: Tag,
     title: "Enter Item IDs",
-    body: "Type the Item ID for each saree, like AR101.",
+    body: "Enter the Item ID for each saree. Arunika can suggest the next available number.",
   },
   {
     icon: IndianRupee,
@@ -49,7 +48,7 @@ const STEPS = [
   {
     icon: Search,
     title: "View the Gallery",
-    body: "The Gallery shows every saree, with search, group filter and sorting.",
+    body: "The Gallery shows every saree, with search, group filters and sorting.",
   },
   {
     icon: Camera,
@@ -62,11 +61,6 @@ const STEPS = [
     body: "A warning shows the existing saree if an Item ID is already used.",
   },
   {
-    icon: CalendarClock,
-    title: "How expiry works",
-    body: "Each listing lasts 30 days, with warnings at 7, 3 and 1 day left.",
-  },
-  {
     icon: Download,
     title: "Export backups",
     body: "Tap Export Backup in Settings to download one file with your photos.",
@@ -74,12 +68,12 @@ const STEPS = [
   {
     icon: FileCheck2,
     title: "Restore backups",
-    body: "Pick a backup file in Settings and confirm to restore it.",
+    body: "Choose a backup file in Settings and confirm to add its listings.",
   },
   {
     icon: Trash2,
-    title: "Clear data",
-    body: "Clear all data deletes every saree, group and photo.",
+    title: "Delete sarees manually",
+    body: "Sarees and their photos stay saved until you choose to delete a listing.",
   },
 ];
 
@@ -88,12 +82,13 @@ function HowToUsePage() {
     <div>
       <PageHeader
         title="How to Use Arunika"
-        description="Twelve short steps, from your first group to your last backup."
+        description="Eleven short steps to manage your saree catalogue."
       />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {STEPS.map((step, index) => {
           const Icon = step.icon;
+
           return (
             <div key={step.title} className="surface flex gap-3 p-4">
               <div className="flex flex-col items-center gap-2">
@@ -102,9 +97,14 @@ function HowToUsePage() {
                 </span>
                 <Icon className="h-4 w-4 text-primary/70" />
               </div>
+
               <div className="min-w-0">
-                <h3 className="font-heading text-[16px] text-[hsl(var(--plum))]">{step.title}</h3>
-                <p className="mt-1 text-[13px] leading-5 text-foreground/70">{step.body}</p>
+                <h3 className="font-heading text-[16px] text-[hsl(var(--plum))]">
+                  {step.title}
+                </h3>
+                <p className="mt-1 text-[13px] leading-5 text-foreground/70">
+                  {step.body}
+                </p>
               </div>
             </div>
           );
@@ -116,11 +116,16 @@ function HowToUsePage() {
           <Database className="h-4 w-4 text-primary" />
           Where your data lives
         </h3>
+
         <p className="text-[13px] leading-5 text-foreground/70">
-          Your catalogue and photos are saved in this browser on this device, and nothing is uploaded.
+          Your catalogue and photos are saved in this browser on this device.
+          They do not expire automatically. A saree stays saved until you
+          manually delete it.
         </p>
+
         <p className="text-[13px] leading-5 text-foreground/70">
-          Clearing browser data will erase it, so export a backup now and then.
+          Clearing browser data can erase your catalogue, so export a backup
+          regularly.
         </p>
       </div>
 
@@ -128,7 +133,9 @@ function HowToUsePage() {
         <p className="font-heading text-[13px] italic text-muted-foreground">
           Made with love for Aruna, Nainika, Darshi &amp; Kishore.
         </p>
-        <p className="text-[11px] text-muted-foreground/80">Made by Max Verstappen (Charish)</p>
+        <p className="text-[11px] text-muted-foreground/80">
+          Made by Max Verstappen (Charish)
+        </p>
       </div>
     </div>
   );

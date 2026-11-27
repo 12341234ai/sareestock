@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Images, PlusCircle, Search } from "lucide-react";
@@ -15,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { SORT_OPTIONS, cleanupExpired, fetchGroups, fetchSarees } from "@/lib/data";
+import { SORT_OPTIONS, fetchGroups, fetchSarees } from "@/lib/data";
 
 export const Route = createFileRoute("/_authed/gallery")({
   head: () => ({ meta: [{ title: "Gallery — Arunika" }] }),
@@ -39,12 +40,16 @@ function GalleryPage() {
   }, [search]);
 
   const { data, loading, error, reload } = useAsyncData(async () => {
-    await cleanupExpired();
     const [rows, groups] = await Promise.all([
       fetchSarees({ search: term, groupId, sort, limit: limit + 1 }),
       fetchGroups(),
     ]);
-    return { sarees: rows.slice(0, limit), hasMore: rows.length > limit, groups };
+
+    return {
+      sarees: rows.slice(0, limit),
+      hasMore: rows.length > limit,
+      groups,
+    };
   }, [term, groupId, sort, limit]);
 
   const sarees = data?.sarees || [];
@@ -55,7 +60,7 @@ function GalleryPage() {
     <div>
       <PageHeader
         title="Gallery"
-        description="Every saree you have saved, with its prices, group and expiry status."
+        description="Every saree you have saved, with its photo, prices and supplier group."
         action={
           <Button asChild className="h-11 rounded-full bg-primary px-4 text-primary-foreground">
             <Link to="/add">
@@ -79,6 +84,7 @@ function GalleryPage() {
             className="h-11 border-border pl-9 text-[16px] sm:text-[14px]"
           />
         </div>
+
         <div className="grid grid-cols-2 gap-2.5 sm:flex">
           <Select
             value={groupId}
@@ -100,6 +106,7 @@ function GalleryPage() {
               <SelectItem value="unassigned">Unassigned</SelectItem>
             </SelectContent>
           </Select>
+
           <Select value={sort} onValueChange={setSort}>
             <SelectTrigger className="h-11 w-full border-border text-[15px] sm:w-[190px] sm:text-[14px]">
               <SelectValue />
@@ -124,7 +131,10 @@ function GalleryPage() {
       {loading && !sarees.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {[0, 1, 2, 3, 4, 5].map((slot) => (
-            <div key={slot} className="h-64 animate-pulse rounded-2xl border border-border bg-secondary/50" />
+            <div
+              key={slot}
+              className="h-64 animate-pulse rounded-2xl border border-border bg-secondary/50"
+            />
           ))}
         </div>
       ) : sarees.length ? (
@@ -132,11 +142,17 @@ function GalleryPage() {
           <p className="mb-3 text-[12px] text-muted-foreground">
             {sarees.length} {sarees.length === 1 ? "saree" : "sarees"} shown
           </p>
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {sarees.map((saree) => (
-              <SareeCard key={saree.id} saree={saree} onOpen={setDetail} />
+              <SareeCard
+                key={saree.id}
+                saree={saree}
+                onOpen={setDetail}
+              />
             ))}
           </div>
+
           {data?.hasMore ? (
             <div className="mt-5 flex justify-center">
               <Button
@@ -171,7 +187,10 @@ function GalleryPage() {
                 Clear filters
               </Button>
             ) : (
-              <Button asChild className="h-11 rounded-full bg-primary px-5 text-primary-foreground">
+              <Button
+                asChild
+                className="h-11 rounded-full bg-primary px-5 text-primary-foreground"
+              >
                 <Link to="/add">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add sarees

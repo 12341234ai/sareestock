@@ -1,189 +1,225 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { FolderOpen, PlusCircle, Search } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Images, PlusCircle, Search } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import PageHeader from "@/components/common/PageHeader";
-import GroupCard from "@/components/groups/GroupCard";
-import GroupFormDialog from "@/components/groups/GroupFormDialog";
+import SareeCard from "@/components/saree/SareeCard";
+import SareeViewer from "@/components/saree/SareeViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { deleteGroup, fetchGroupCounts, fetchGroups, unassignGroup } from "@/lib/data";
+import { SORT_OPTIONS, fetchGroups, fetchSarees } from "@/lib/data";
 
 export const Route = createFileRoute("/_authed/groups")({
-  head: () => ({ meta: [{ title: "Supplier Groups — Arunika" }] }),
-  component: GroupsPage,
+  head: () => ({ meta: [{ title: "Gallery — Arunika" }] }),
+  component: GalleryPage,
 });
 
-function GroupsPage() {
+const PAGE_SIZE = 48;
+
+function GalleryPage() {
   const [search, setSearch] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [term, setTerm] = useState("");
+  const [groupId, setGroupId] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [detail, setDetail] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const { data, loading, reload } = useAsyncData(async () => {
-    const [groups, counts] = await Promise.all([fetchGroups(), fetchGroupCounts()]);
-    return { groups, counts };
-  }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => setTerm(search), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  const { data, loading, error, reload } = useAsyncData(async () => {
+    const [rows, groups] = await Promise.all([
+      fetchSarees({
+        search: term,
+        groupId,
+        sort,
+        limit: limit + 1,
+      }),
+      fetchGroups(),
+    ]);
+
+    return {
+      sarees: rows.slice(0, limit),
+      hasMore: rows.length > limit,
+      groups,
+    };
+  }, [term, groupId, sort, limit]);
+
+  const sarees = data?.sarees || [];
   const groups = data?.groups || [];
-  const counts = data?.counts || {};
-  const term = search.trim().toLowerCase();
-  const visible = term ? groups.filter((group) => group.name.toLowerCase().includes(term)) : groups;
-
-  const handleDelete = async () => {
-    if (!deleting) return;
-    setBusy(true);
-    try {
-      await unassignGroup(deleting.id);
-      await deleteGroup(deleting.id);
-      toast.success(`"${deleting.name}" deleted. Its sarees are now unassigned.`);
-      setDeleting(null);
-      reload();
-    } catch {
-      toast.error("This group could not be deleted. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const filtering = Boolean(term) || groupId !== "all";
 
   return (
     <div>
       <PageHeader
-        title="Supplier Groups"
-        description="Organise suppliers and collections. Sarees stay safe when a group is removed."
+        title="Gallery"
+        description="Every saree you have saved, with its photo, prices and supplier group."
         action={
           <Button
+            asChild
             className="h-11 rounded-full bg-primary px-4 text-primary-foreground"
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New group
+            <Link to="/add">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add sarees
+            </Link>
           </Button>
         }
       />
 
-      <div className="surface mb-4 flex items-center gap-2 p-3">
+      <div className="surface mb-4 flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
           <Input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search groups"
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setLimit(PAGE_SIZE);
+            }}
+            placeholder="Search by Item ID"
             className="h-11 border-border pl-9 text-[16px] sm:text-[14px]"
           />
         </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:flex">
+          <Select
+            value={groupId}
+            onValueChange={(value) => {
+              setGroupId(value);
+              setLimit(PAGE_SIZE);
+            }}
+          >
+            <SelectTrigger className="h-11 w-full border-border text-[15px] sm:w-[170px] sm:text-[14px]">
+              <SelectValue placeholder="All groups" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="all">All groups</SelectItem>
+
+              {groups.map((group) => (
+                <SelectItem key={group.id} value={group.id}>
+                  {group.name}
+                </SelectItem>
+              ))}
+
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sort} onValueChange={setSort}>
+            <SelectTrigger className="h-11 w-full border-border text-[15px] sm:w-[190px] sm:text-[14px]">
+              <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {loading && !groups.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((slot) => (
-            <div key={slot} className="h-32 animate-pulse rounded-2xl border border-border bg-secondary/50" />
-          ))}
-        </div>
-      ) : visible.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={group}
-              count={counts[group.id] || 0}
-              onEdit={(target) => {
-                setEditing(target);
-                setFormOpen(true);
-              }}
-              onDelete={setDeleting}
+      {error ? (
+        <p className="mb-3 rounded-xl border border-[#F2C9C5] bg-[#FBE6E4] px-3 py-2 text-[12px] text-[#B0453C]">
+          Your sarees could not be loaded. Please refresh the page and try again.
+        </p>
+      ) : null}
+
+      {loading && !sarees.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+          {[0, 1, 2, 3, 4, 5].map((slot) => (
+            <div
+              key={slot}
+              className="h-64 animate-pulse rounded-2xl border border-border bg-secondary/50"
             />
           ))}
         </div>
+      ) : sarees.length ? (
+        <>
+          <p className="mb-3 text-[12px] text-muted-foreground">
+            {sarees.length} {sarees.length === 1 ? "saree" : "sarees"} shown
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            {sarees.map((saree) => (
+              <SareeCard
+                key={saree.id}
+                saree={saree}
+                onOpen={setDetail}
+              />
+            ))}
+          </div>
+
+          {data?.hasMore ? (
+            <div className="mt-5 flex justify-center">
+              <Button
+                variant="outline"
+                className="h-11 rounded-full border-border px-6 text-[hsl(var(--plum))]"
+                onClick={() => setLimit((value) => value + PAGE_SIZE)}
+              >
+                Load more
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <EmptyState
-          icon={FolderOpen}
-          title={term ? "No group matches this search" : "No supplier groups yet"}
+          icon={Images}
+          title={filtering ? "No sarees match this search" : "No sarees yet"}
           description={
-            term
-              ? "Try a different name."
-              : "Create groups such as Silk Saree Suppliers, Wholesale Collection or Festival Collection."
+            filtering
+              ? "Try a different Item ID or choose another supplier group."
+              : "Add your first saree with a photo, Item ID, selling price and purchase price."
           }
           action={
-            term ? (
-              <Button variant="outline" className="h-11 rounded-full border-border" onClick={() => setSearch("")}>
-                Clear search
+            filtering ? (
+              <Button
+                variant="outline"
+                className="h-11 rounded-full border-border"
+                onClick={() => {
+                  setSearch("");
+                  setGroupId("all");
+                }}
+              >
+                Clear filters
               </Button>
             ) : (
               <Button
+                asChild
                 className="h-11 rounded-full bg-primary px-5 text-primary-foreground"
-                onClick={() => {
-                  setEditing(null);
-                  setFormOpen(true);
-                }}
               >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create your first group
+                <Link to="/add">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add sarees
+                </Link>
               </Button>
             )
           }
         />
       )}
 
-      <GroupFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        group={editing}
-        groups={groups}
-        onSaved={(name) => {
-          toast.success(editing ? `Group renamed to "${name}".` : `Group "${name}" created.`);
-          reload();
-        }}
+      <SareeViewer
+        detail={detail}
+        onDetailChange={setDetail}
+        deleteTarget={deleteTarget}
+        onDeleteTargetChange={setDeleteTarget}
+        onDeleted={reload}
       />
-
-      <AlertDialog
-        open={!!deleting}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null);
-        }}
-      >
-        <AlertDialogContent className="w-[calc(100vw-1.5rem)] rounded-2xl border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-heading text-[20px] text-[hsl(var(--plum))]">
-              Delete “{deleting?.name}”?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] leading-5">
-              The group will be removed. Its {counts[deleting?.id] || 0} saree
-              {(counts[deleting?.id] || 0) === 1 ? "" : "s"} will not be deleted — they become
-              unassigned and stay in your Gallery.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="h-11 rounded-full">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={busy}
-              onClick={(event) => {
-                event.preventDefault();
-                handleDelete();
-              }}
-              className="h-11 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {busy ? "Deleting…" : "Delete group"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

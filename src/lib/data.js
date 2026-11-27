@@ -1,5 +1,4 @@
 
-
 import {
   clearStore,
   getAll,
@@ -194,7 +193,6 @@ export async function fetchDashboard() {
   return {
     total: sarees.length,
     groups: groups.length,
-    expiring: 0,
     recent: sarees.filter(
       (saree) => time(saree.upload_date) >= weekAgo
     ).length,
@@ -217,7 +215,6 @@ export async function createSaree(input) {
     group_name_search: String(input.group_name || "").toLowerCase(),
     photo_uri: input.photo_uri || "",
     upload_date: uploadDate,
-    expiry_date: null,
     signature: input.signature || null,
   };
 
@@ -300,14 +297,6 @@ export async function unassignGroup(groupId) {
 
 export async function deleteGroup(groupId) {
   await remove(GROUPS, groupId);
-}
-
-/**
- * Automatic expiry is disabled.
- * Sarees remain saved until manually deleted.
- */
-export async function cleanupExpired() {
-  return 0;
 }
 
 export async function clearEverything() {

@@ -23,10 +23,7 @@ import {
   computeSignature,
 } from "@/lib/imageUtils";
 
-import {
-  expiryFromUpload,
-  parsePrice,
-} from "@/lib/sareeUtils";
+import { parsePrice } from "@/lib/sareeUtils";
 
 export const Route = createFileRoute("/_authed/add")({
   head: () => ({
@@ -263,7 +260,6 @@ function AddSareesPage() {
           group_name: group?.name || "",
           photo_uri: photoData,
           upload_date: uploadDate,
-          expiry_date: expiryFromUpload(uploadDate),
           signature: item.signature || null,
         });
 
@@ -437,7 +433,7 @@ function AddSareesPage() {
                   />
 
                   <p className="hidden text-[12px] text-muted-foreground sm:block">
-                    Every saree is checked before saving. Expiry is 30 days from today.
+                    Your saree photos stay saved until you manually delete them.
                   </p>
 
                   <div className="flex w-full gap-2 sm:w-auto">
