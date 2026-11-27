@@ -11,8 +11,8 @@ import {
 import { cn } from "@/lib/utils";
 import { MOBILE_NAV, NAV_ITEMS, isNavActive } from "./nav-items";
 
-const LOGIN_USERNAME = "Arunika designers";
-const LOGIN_PASSWORD = "sixtwofourfiveonetwo";
+const LOGIN_USERNAME = "Arunika sarees";
+const LOGIN_PASSWORD = "624512";
 const SESSION_KEY = "arunika_unlocked";
 
 function LoginScreen({ onUnlock }) {
