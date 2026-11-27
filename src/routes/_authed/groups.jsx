@@ -1,224 +1,163 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Images, PlusCircle, Search } from "lucide-react";
+
+import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { FolderOpen, PlusCircle } from "lucide-react";
+
 import EmptyState from "@/components/common/EmptyState";
 import PageHeader from "@/components/common/PageHeader";
-import SareeCard from "@/components/saree/SareeCard";
-import SareeViewer from "@/components/saree/SareeViewer";
+import GroupCard from "@/components/groups/GroupCard";
+import GroupFormDialog from "@/components/groups/GroupFormDialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { SORT_OPTIONS, fetchGroups, fetchSarees } from "@/lib/data";
+import {
+  deleteGroup,
+  fetchGroupCounts,
+  fetchGroups,
+  unassignGroup,
+} from "@/lib/data";
 
 export const Route = createFileRoute("/_authed/groups")({
-  head: () => ({ meta: [{ title: "Gallery — Arunika" }] }),
-  component: GalleryPage,
+  head: () => ({ meta: [{ title: "Groups — Arunika" }] }),
+  component: GroupsPage,
 });
 
-const PAGE_SIZE = 48;
-
-function GalleryPage() {
-  const [search, setSearch] = useState("");
-  const [term, setTerm] = useState("");
-  const [groupId, setGroupId] = useState("all");
-  const [sort, setSort] = useState("newest");
-  const [limit, setLimit] = useState(PAGE_SIZE);
-  const [detail, setDetail] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setTerm(search), 350);
-    return () => clearTimeout(timer);
-  }, [search]);
+function GroupsPage() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [actionError, setActionError] = useState("");
 
   const { data, loading, error, reload } = useAsyncData(async () => {
-    const [rows, groups] = await Promise.all([
-      fetchSarees({
-        search: term,
-        groupId,
-        sort,
-        limit: limit + 1,
-      }),
+    const [groups, counts] = await Promise.all([
       fetchGroups(),
+      fetchGroupCounts(),
     ]);
 
-    return {
-      sarees: rows.slice(0, limit),
-      hasMore: rows.length > limit,
-      groups,
-    };
-  }, [term, groupId, sort, limit]);
+    return { groups, counts };
+  }, []);
 
-  const sarees = data?.sarees || [];
   const groups = data?.groups || [];
-  const filtering = Boolean(term) || groupId !== "all";
+  const counts = data?.counts || {};
+
+  function openNewGroup() {
+    setEditingGroup(null);
+    setDialogOpen(true);
+  }
+
+  function openEditGroup(group) {
+    setEditingGroup(group);
+    setDialogOpen(true);
+  }
+
+  async function handleDelete(group) {
+    const confirmed = window.confirm(
+      `Delete "${group.name}"?\n\nThe sarees in this group will be kept. They will become unassigned.`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingId(group.id);
+    setActionError("");
+
+    try {
+      await unassignGroup(group.id);
+      await deleteGroup(group.id);
+      await reload();
+    } catch (err) {
+      setActionError(
+        err?.message || "This group could not be deleted. Please try again."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div>
       <PageHeader
-        title="Gallery"
-        description="Every saree you have saved, with its photo, prices and supplier group."
+        title="Groups"
+        description="Organise your sarees by supplier, collection or any category you choose."
         action={
           <Button
-            asChild
+            onClick={openNewGroup}
             className="h-11 rounded-full bg-primary px-4 text-primary-foreground"
           >
-            <Link to="/add">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add sarees
-            </Link>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New group
           </Button>
         }
       />
 
-      <div className="surface mb-4 flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-          <Input
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setLimit(PAGE_SIZE);
-            }}
-            placeholder="Search by Item ID"
-            className="h-11 border-border pl-9 text-[16px] sm:text-[14px]"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5 sm:flex">
-          <Select
-            value={groupId}
-            onValueChange={(value) => {
-              setGroupId(value);
-              setLimit(PAGE_SIZE);
-            }}
-          >
-            <SelectTrigger className="h-11 w-full border-border text-[15px] sm:w-[170px] sm:text-[14px]">
-              <SelectValue placeholder="All groups" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="all">All groups</SelectItem>
-
-              {groups.map((group) => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.name}
-                </SelectItem>
-              ))}
-
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="h-11 w-full border-border text-[15px] sm:w-[190px] sm:text-[14px]">
-              <SelectValue />
-            </SelectTrigger>
-
-            <SelectContent>
-              {SORT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {error ? (
-        <p className="mb-3 rounded-xl border border-[#F2C9C5] bg-[#FBE6E4] px-3 py-2 text-[12px] text-[#B0453C]">
-          Your sarees could not be loaded. Please refresh the page and try again.
+        <p className="mb-4 rounded-xl border border-[#F2C9C5] bg-[#FBE6E4] px-3 py-2 text-[12px] text-[#B0453C]">
+          Your groups could not be loaded. Please refresh the page and try
+          again.
         </p>
       ) : null}
 
-      {loading && !sarees.length ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {[0, 1, 2, 3, 4, 5].map((slot) => (
+      {actionError ? (
+        <p
+          role="alert"
+          className="mb-4 rounded-xl border border-[#F2C9C5] bg-[#FBE6E4] px-3 py-2 text-[12px] text-[#B0453C]"
+        >
+          {actionError}
+        </p>
+      ) : null}
+
+      {loading && !data ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((slot) => (
             <div
               key={slot}
-              className="h-64 animate-pulse rounded-2xl border border-border bg-secondary/50"
+              className="h-36 animate-pulse rounded-2xl border border-border bg-secondary/50"
             />
           ))}
         </div>
-      ) : sarees.length ? (
+      ) : groups.length > 0 ? (
         <>
           <p className="mb-3 text-[12px] text-muted-foreground">
-            {sarees.length} {sarees.length === 1 ? "saree" : "sarees"} shown
+            {groups.length} {groups.length === 1 ? "group" : "groups"}
           </p>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {sarees.map((saree) => (
-              <SareeCard
-                key={saree.id}
-                saree={saree}
-                onOpen={setDetail}
-              />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.map((group) => (
+              <div
+                key={group.id}
+                className={deletingId === group.id ? "opacity-50" : ""}
+              >
+                <GroupCard
+                  group={group}
+                  count={counts[group.id] || 0}
+                  onEdit={openEditGroup}
+                  onDelete={handleDelete}
+                />
+              </div>
             ))}
           </div>
-
-          {data?.hasMore ? (
-            <div className="mt-5 flex justify-center">
-              <Button
-                variant="outline"
-                className="h-11 rounded-full border-border px-6 text-[hsl(var(--plum))]"
-                onClick={() => setLimit((value) => value + PAGE_SIZE)}
-              >
-                Load more
-              </Button>
-            </div>
-          ) : null}
         </>
       ) : (
         <EmptyState
-          icon={Images}
-          title={filtering ? "No sarees match this search" : "No sarees yet"}
-          description={
-            filtering
-              ? "Try a different Item ID or choose another supplier group."
-              : "Add your first saree with a photo, Item ID, selling price and purchase price."
-          }
+          icon={FolderOpen}
+          title="No supplier groups yet"
+          description="Create your first group to organise sarees by supplier or collection. For example, Silk Saree Suppliers."
           action={
-            filtering ? (
-              <Button
-                variant="outline"
-                className="h-11 rounded-full border-border"
-                onClick={() => {
-                  setSearch("");
-                  setGroupId("all");
-                }}
-              >
-                Clear filters
-              </Button>
-            ) : (
-              <Button
-                asChild
-                className="h-11 rounded-full bg-primary px-5 text-primary-foreground"
-              >
-                <Link to="/add">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add sarees
-                </Link>
-              </Button>
-            )
+            <Button
+              onClick={openNewGroup}
+              className="h-11 rounded-full bg-primary px-5 text-primary-foreground"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create your first group
+            </Button>
           }
         />
       )}
 
-      <SareeViewer
-        detail={detail}
-        onDetailChange={setDetail}
-        deleteTarget={deleteTarget}
-        onDeleteTargetChange={setDeleteTarget}
-        onDeleted={reload}
+      <GroupFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        group={editingGroup}
+        groups={groups}
+        onSaved={reload}
       />
     </div>
   );
