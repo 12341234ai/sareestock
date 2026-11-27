@@ -1,6 +1,13 @@
 
-import { clearStore, getAll, newId, put, putMany, remove, removeMany } from "@/lib/localStore";
-import { expiryFromUpload } from "@/lib/sareeUtils";
+
+import {
+  clearStore,
+  getAll,
+  newId,
+  put,
+  putMany,
+  remove,
+} from "@/lib/localStore";
 
 const SAREES = "sarees";
 const GROUPS = "groups";
@@ -83,8 +90,7 @@ export async function countSarees() {
 }
 
 /**
- * Reserves the next available AR numbers.
- * The counter is persisted so deleted or cancelled IDs are not reused.
+ * Automatically reserves the next available AR numbers.
  */
 export async function reserveNextItemNumbers(count = 1) {
   const amount = Math.max(0, Math.floor(Number(count) || 0));
@@ -94,7 +100,6 @@ export async function reserveNextItemNumbers(count = 1) {
   const sarees = await getAll(SAREES);
   let highestNumber = 100;
 
-  // Find the highest existing AR number.
   for (const saree of sarees) {
     const match = String(saree.item_id || "")
       .trim()
@@ -105,7 +110,6 @@ export async function reserveNextItemNumbers(count = 1) {
     }
   }
 
-  // Include previously reserved numbers.
   try {
     const savedNext = Number(
       window.localStorage.getItem(ITEM_ID_COUNTER_KEY)
@@ -115,20 +119,19 @@ export async function reserveNextItemNumbers(count = 1) {
       highestNumber = Math.max(highestNumber, savedNext - 1);
     }
   } catch {
-    // Continue using existing records if local storage is unavailable.
+    // Continue using existing records.
   }
 
   const firstNumber = highestNumber + 1;
   const nextNumber = firstNumber + amount;
 
-  // Save the next unused number before returning the suggestions.
   try {
     window.localStorage.setItem(
       ITEM_ID_COUNTER_KEY,
       String(nextNumber)
     );
   } catch {
-    // Existing records can still be used to calculate suggestions.
+    // Continue without persistent counter.
   }
 
   return Array.from(
@@ -182,7 +185,6 @@ export async function fetchGroupCounts() {
 export async function fetchDashboard() {
   const now = Date.now();
   const weekAgo = now - 7 * 86400000;
-  const weekAhead = now + 7 * 86400000;
 
   const [sarees, groups] = await Promise.all([
     getAll(SAREES),
@@ -192,10 +194,7 @@ export async function fetchDashboard() {
   return {
     total: sarees.length,
     groups: groups.length,
-    expiring: sarees.filter((saree) => {
-      const expiry = time(saree.expiry_date);
-      return expiry >= now && expiry <= weekAhead;
-    }).length,
+    expiring: 0,
     recent: sarees.filter(
       (saree) => time(saree.upload_date) >= weekAgo
     ).length,
@@ -218,7 +217,7 @@ export async function createSaree(input) {
     group_name_search: String(input.group_name || "").toLowerCase(),
     photo_uri: input.photo_uri || "",
     upload_date: uploadDate,
-    expiry_date: input.expiry_date || expiryFromUpload(uploadDate),
+    expiry_date: null,
     signature: input.signature || null,
   };
 
@@ -244,7 +243,6 @@ export async function createGroup(name) {
   return record;
 }
 
-/** Creates the group, or renames it and updates every saree that belongs to it. */
 export async function saveGroup({ id, name }) {
   const clean = String(name || "").trim();
 
@@ -304,34 +302,12 @@ export async function deleteGroup(groupId) {
   await remove(GROUPS, groupId);
 }
 
-let lastCleanup = 0;
-
-/** Removes listings older than 30 days. Runs when the app is opened or refreshed. */
-export async function cleanupExpired(force = false) {
-  const now = Date.now();
-
-  if (!force && now - lastCleanup < 60000) return 0;
-
-  lastCleanup = now;
-
-  try {
-    const sarees = await getAll(SAREES);
-
-    const expired = sarees.filter(
-      (saree) => time(saree.expiry_date) < now
-    );
-
-    if (expired.length) {
-      await removeMany(
-        SAREES,
-        expired.map((saree) => saree.id)
-      );
-    }
-
-    return expired.length;
-  } catch {
-    return 0;
-  }
+/**
+ * Automatic expiry is disabled.
+ * Sarees remain saved until manually deleted.
+ */
+export async function cleanupExpired() {
+  return 0;
 }
 
 export async function clearEverything() {
